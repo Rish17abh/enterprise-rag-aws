@@ -1,8 +1,14 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
+  const STORAGE_BASE = "rag_api_base";
+  const STORAGE_KEY = "rag_api_key";
+
   const apiBaseInput = $("apiBase");
   const apiKeyInput = $("apiKey");
+  const authPanel = $("authPanel");
+  const authBadge = $("authBadge");
+  const toggleSettings = $("toggleSettings");
   const credsStatus = $("credsStatus");
   const dropzone = $("dropzone");
   const fileInput = $("fileInput");
@@ -23,10 +29,60 @@
 
   let selectedFile = null;
 
-  const defaults = window.ENTERPRISE_RAG_CONFIG || {};
-  apiBaseInput.value =
-    sessionStorage.getItem("rag_api_base") || defaults.apiBaseUrl || "";
-  apiKeyInput.value = sessionStorage.getItem("rag_api_key") || "";
+  const defaults = {
+    ...(window.ENTERPRISE_RAG_CONFIG || {}),
+    ...(window.ENTERPRISE_RAG_LOCAL_CONFIG || {}),
+  };
+
+  function readStored(key) {
+    return localStorage.getItem(key) || sessionStorage.getItem(key) || "";
+  }
+
+  function persistCreds(apiBase, apiKey) {
+    localStorage.setItem(STORAGE_BASE, apiBase);
+    localStorage.setItem(STORAGE_KEY, apiKey);
+    sessionStorage.removeItem(STORAGE_BASE);
+    sessionStorage.removeItem(STORAGE_KEY);
+  }
+
+  function clearStoredCreds() {
+    localStorage.removeItem(STORAGE_BASE);
+    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_BASE);
+    sessionStorage.removeItem(STORAGE_KEY);
+  }
+
+  function resolveCreds() {
+    const apiBase = (
+      apiBaseInput.value.trim() ||
+      readStored(STORAGE_BASE) ||
+      defaults.apiBaseUrl ||
+      ""
+    ).replace(/\/$/, "");
+    const apiKey =
+      apiKeyInput.value.trim() ||
+      readStored(STORAGE_KEY) ||
+      defaults.apiKey ||
+      "";
+    return { apiBase, apiKey };
+  }
+
+  function hasCreds(creds = resolveCreds()) {
+    return Boolean(creds.apiBase && creds.apiKey);
+  }
+
+  function syncAuthUi(message = "") {
+    const ready = hasCreds();
+    authBadge.hidden = !ready;
+    if (!ready) {
+      authPanel.hidden = false;
+    }
+    if (message) {
+      setStatus(credsStatus, message, ready ? "ok" : "bad");
+    } else if (ready && !authPanel.hidden) {
+      setStatus(credsStatus, "Credentials ready for this browser.", "ok");
+    }
+  }
 
   function setStatus(el, message, kind = "") {
     el.textContent = message;
@@ -34,22 +90,70 @@
   }
 
   function getCreds() {
-    const apiBase = apiBaseInput.value.trim().replace(/\/$/, "");
-    const apiKey = apiKeyInput.value.trim();
-    if (!apiBase || !apiKey) {
-      throw new Error("Save your API base URL and API key first.");
+    const creds = resolveCreds();
+    if (!creds.apiBase || !creds.apiKey) {
+      authPanel.hidden = false;
+      throw new Error("Add your API base URL and API key in Settings.");
     }
-    return { apiBase, apiKey };
+    // Keep localStorage warm so future sessions stay signed in.
+    persistCreds(creds.apiBase, creds.apiKey);
+    apiBaseInput.value = creds.apiBase;
+    apiKeyInput.value = creds.apiKey;
+    syncAuthUi();
+    return creds;
   }
+
+  // Seed inputs: stored browser values win, then local serve config, then defaults.
+  apiBaseInput.value =
+    readStored(STORAGE_BASE) || defaults.apiBaseUrl || "";
+  apiKeyInput.value = readStored(STORAGE_KEY) || defaults.apiKey || "";
+
+  // Auto-persist when serve.sh / config.local.js provided a key.
+  if (hasCreds()) {
+    const seeded = resolveCreds();
+    persistCreds(seeded.apiBase, seeded.apiKey);
+    authPanel.hidden = true;
+    syncAuthUi();
+  } else {
+    authPanel.hidden = false;
+    syncAuthUi("Enter API settings once — they will be remembered.");
+  }
+
+  toggleSettings.addEventListener("click", () => {
+    authPanel.hidden = !authPanel.hidden;
+    if (!authPanel.hidden) {
+      apiBaseInput.focus();
+    }
+  });
 
   $("saveCreds").addEventListener("click", () => {
     try {
-      const { apiBase, apiKey } = getCreds();
-      sessionStorage.setItem("rag_api_base", apiBase);
-      sessionStorage.setItem("rag_api_key", apiKey);
-      setStatus(credsStatus, "Session credentials saved.", "ok");
+      const apiBase = apiBaseInput.value.trim().replace(/\/$/, "");
+      const apiKey = apiKeyInput.value.trim();
+      if (!apiBase || !apiKey) {
+        throw new Error("API base URL and API key are required.");
+      }
+      persistCreds(apiBase, apiKey);
+      authPanel.hidden = true;
+      syncAuthUi("Saved. You will not need to enter these again on this browser.");
     } catch (err) {
       setStatus(credsStatus, err.message, "bad");
+    }
+  });
+
+  $("clearCreds").addEventListener("click", () => {
+    clearStoredCreds();
+    apiKeyInput.value = defaults.apiKey || "";
+    apiBaseInput.value = defaults.apiBaseUrl || "";
+    if (hasCreds()) {
+      // Local config still provides values (e.g. serve.sh).
+      const seeded = resolveCreds();
+      persistCreds(seeded.apiBase, seeded.apiKey);
+      syncAuthUi("Browser storage cleared. Local serve config is still active.");
+    } else {
+      authBadge.hidden = true;
+      authPanel.hidden = false;
+      setStatus(credsStatus, "Saved credentials cleared.", "warn");
     }
   });
 
@@ -162,7 +266,7 @@
       progressBar.style.width = "100%";
       setStatus(
         uploadStatus,
-        "Upload complete. Ingestion pipeline will redact PII and index vectors shortly.",
+        "Upload complete. Ingestion will redact PII and index vectors shortly.",
         "ok"
       );
       uploadDetail.hidden = false;

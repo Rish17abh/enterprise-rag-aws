@@ -3,47 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ENTERPRISE RAG — Document Intake</title>
+    <title>Enterprise RAG — Document intake</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Code+Pro:wght@450;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="geo geo-a" aria-hidden="true"></div>
-    <div class="geo geo-b" aria-hidden="true"></div>
-    <div class="geo geo-c" aria-hidden="true"></div>
-
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true"></span>
         <div>
-          <p class="brand-name">ENTERPRISE RAG</p>
-          <p class="brand-sub">AWS private document intake</p>
+          <p class="brand-name">Enterprise RAG</p>
+          <p class="brand-sub">Document intake · us-east-1</p>
         </div>
       </div>
-      <div class="topbar-meta">
-        <span class="chip">SSE-KMS</span>
-        <span class="chip">PrivateLink</span>
-        <span class="chip">PII redact</span>
+      <div class="topbar-right">
+        <span id="authBadge" class="auth-badge" hidden>Connected</span>
+        <button id="toggleSettings" class="btn btn-link" type="button">Settings</button>
       </div>
     </header>
 
     <main class="shell">
       <section class="hero">
-        <h1>Upload. Redact. Index.</h1>
+        <p class="hero-brand">Enterprise RAG</p>
+        <h1>Upload documents to your private knowledge base</h1>
         <p class="lede">
-          Drop a PDF or TXT into the secure lane. Files go to S3 with KMS encryption, then the ingestion pipeline handles PII masking and vector indexing.
+          Files are written to S3 with KMS encryption, then redacted and indexed for retrieval.
         </p>
       </section>
 
-      <section class="panel auth-panel" aria-label="API credentials">
+      <section id="authPanel" class="panel auth-panel" aria-label="API credentials" hidden>
         <div class="panel-head">
-          <h2>01 / ACCESS</h2>
-          <p>Paste your API key once. Stored only in this browser session.</p>
+          <h2>API settings</h2>
+          <p>Credentials are saved in this browser and reused automatically.</p>
         </div>
         <label class="field">
           <span>API base URL</span>
@@ -53,20 +49,22 @@
           <span>API key</span>
           <input id="apiKey" type="password" spellcheck="false" autocomplete="off" placeholder="x-api-key value" />
         </label>
-        <button id="saveCreds" class="btn btn-secondary" type="button">Save session</button>
+        <div class="btn-row">
+          <button id="saveCreds" class="btn btn-primary" type="button">Save</button>
+          <button id="clearCreds" class="btn btn-secondary" type="button">Clear saved</button>
+        </div>
         <p id="credsStatus" class="status" role="status"></p>
       </section>
 
       <section class="panel upload-panel" aria-label="Document upload">
         <div class="panel-head">
-          <h2>02 / INTAKE</h2>
-          <p>Accepted: <code>.pdf</code> <code>.txt</code> · max practical size ~20MB for this demo UI</p>
+          <h2>Upload</h2>
+          <p>Accepted: <code>.pdf</code>, <code>.txt</code></p>
         </div>
 
         <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Upload document dropzone">
-          <div class="dropzone-frame"></div>
-          <p class="dropzone-title">Drop document here</p>
-          <p class="dropzone-hint">or click to browse</p>
+          <p class="dropzone-title">Drag and drop a file here</p>
+          <p class="dropzone-hint">or choose a file from your computer</p>
           <input id="fileInput" type="file" accept=".pdf,.txt,application/pdf,text/plain" hidden />
         </div>
 
@@ -76,12 +74,12 @@
               <p class="file-name" id="fileName">—</p>
               <p class="file-meta" id="fileMeta">—</p>
             </div>
-            <button id="clearFile" class="btn btn-ghost" type="button">Clear</button>
+            <button id="clearFile" class="btn btn-secondary" type="button">Remove</button>
           </div>
           <div class="progress" aria-hidden="true">
             <div id="progressBar" class="progress-bar"></div>
           </div>
-          <button id="uploadBtn" class="btn btn-primary" type="button">Upload to secure bucket</button>
+          <button id="uploadBtn" class="btn btn-primary" type="button">Upload</button>
         </div>
 
         <p id="uploadStatus" class="status" role="status"></p>
@@ -90,14 +88,14 @@
 
       <section class="panel ask-panel" aria-label="Ask the corpus">
         <div class="panel-head">
-          <h2>03 / ASK</h2>
-          <p>After indexing finishes (~15–60s), query the private corpus.</p>
+          <h2>Ask</h2>
+          <p>After indexing finishes (about 15–60 seconds), query the corpus.</p>
         </div>
         <label class="field">
           <span>Question</span>
           <textarea id="question" rows="3" placeholder="Who should I contact about the Enterprise RAG policy?"></textarea>
         </label>
-        <button id="askBtn" class="btn btn-primary" type="button">Run retrieval</button>
+        <button id="askBtn" class="btn btn-primary" type="button">Ask</button>
         <p id="askStatus" class="status" role="status"></p>
         <article id="answerBox" class="answer" hidden>
           <h3>Answer</h3>
@@ -108,10 +106,11 @@
     </main>
 
     <footer class="footer">
-      <p>Sharp perimeter · Bedrock · OpenSearch Serverless · Step Functions</p>
+      <p>Amazon Bedrock · OpenSearch Serverless · Step Functions · S3</p>
     </footer>
 
     <script src="./config.js"></script>
+    <script src="./config.local.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

@@ -20,6 +20,7 @@ benchmarks/results/
 .env
 .env.*
 !.env.example
+frontend/config.local.js
 
 # Python
 __pycache__/

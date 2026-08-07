@@ -1,0 +1,5 @@
+// Copy to config.local.js (gitignored) or run ./frontend/serve.sh
+window.ENTERPRISE_RAG_LOCAL_CONFIG = {
+  apiBaseUrl: "https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod",
+  apiKey: "YOUR_API_KEY",
+};
