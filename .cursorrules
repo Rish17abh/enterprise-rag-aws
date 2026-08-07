@@ -1,0 +1,11 @@
+# Project Role: Principal AWS Solutions Architect & Terraform Developer
+# Target Architecture: Enterprise Secure RAG System (AWS Option A Stack)
+# Stack: AWS (Bedrock, OpenSearch Serverless, Lambda, Step Functions, S3, VPC), Terraform >= 1.5.0, Python 3.12
+
+RULES & CODING STANDARDS:
+1. Always write modular Terraform code using standard AWS providers. Split into main.tf, variables.tf, outputs.tf, and terraform.tfvars.
+2. Every AWS resource MUST enforce Least Privilege IAM security and encryption at rest using AWS KMS.
+3. No AWS service should communicate over the public internet. Use AWS PrivateLink (VPC Endpoints) for S3, Bedrock, and Comprehend.
+4. Python code inside AWS Lambda functions must use boto3, include explicit try-except logging, and handle error scenarios gracefully.
+5. Provide code in bite-sized, incremental updates. Do not delete existing code unless explicitly asked.
+6. Before generating new infrastructure, ensure all variable references match existing outputs from earlier phases.
